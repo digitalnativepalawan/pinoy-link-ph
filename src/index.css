@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,8 +15,8 @@
     --color-text: #1a1a2e;
     --color-text-muted: #6b7280;
 
-    --font-heading: 'Syne', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
 
     /* shadcn tokens (kept for component compatibility) — mapped to PH theme */
     --background: 48 100% 97%;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link as RLink } from "react-router-dom";
 import {
-  ArrowUpRight, Wallet, Smartphone, Clock, Handshake, Copy, X, Mail, Instagram, QrCode,
+  ArrowUpRight, Clock, Handshake, Mail, Instagram, Share2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,8 +22,6 @@ export const PublicProfile = ({ usernameProp, isPreview = false }: { usernamePro
   const [profile, setProfile] = useState<any | null>(null);
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tipOpen, setTipOpen] = useState(false);
-  const [pasaOpen, setPasaOpen] = useState(false);
   const [scheduleExpanded, setScheduleExpanded] = useState(false);
 
   useEffect(() => {
@@ -102,11 +100,22 @@ export const PublicProfile = ({ usernameProp, isPreview = false }: { usernamePro
     if (link.url) window.open(link.url, "_blank", "noopener,noreferrer");
   };
 
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: profile.display_name ?? profile.username, url });
+      } catch {
+        // dismissed
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success(t({ en: "Link copied!", tl: "Nakopya ang link!" }));
+    }
+  };
+
   const heroLink = links[0];
   const restLinks = links.slice(1);
-  const presets: number[] = Array.isArray(profile.gcash_presets) && profile.gcash_presets.length === 3
-    ? profile.gcash_presets
-    : [20, 50, 100];
 
   const schedule: ScheduleJson = profile.schedule_json && typeof profile.schedule_json === "object"
     ? { ...DEFAULT_SCHEDULE, ...profile.schedule_json }
@@ -115,9 +124,18 @@ export const PublicProfile = ({ usernameProp, isPreview = false }: { usernamePro
   const moodText = lang === "EN" ? profile.mood_en : profile.mood_tl;
   const bioText = lang === "EN" ? profile.bio_en : profile.bio_tl;
 
+  const hasBg = !!profile.bg_image_url;
+  const coverStyle: React.CSSProperties = hasBg
+    ? { backgroundImage: `url(${profile.bg_image_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary))` };
+
   return (
-    <div className="relative min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
-      {profile.bg_image_url && (
+    <div
+      className="relative min-h-screen animate-fade-in pb-20"
+      style={{ backgroundColor: hasBg ? "transparent" : "var(--color-bg)" }}
+    >
+      {/* Fixed background */}
+      {hasBg && (
         <div className="fixed inset-0 -z-10">
           <div
             className="absolute inset-0"
@@ -127,175 +145,161 @@ export const PublicProfile = ({ usernameProp, isPreview = false }: { usernamePro
               backgroundPosition: "center",
             }}
           />
-          <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.45)" }} />
+          <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} />
         </div>
       )}
 
-      <div className="relative max-w-[460px] mx-auto px-5 pt-4 pb-12">
-        {/* Lang toggle */}
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={toggle}
-            className="px-3 py-1 rounded-full text-[11px] font-semibold"
+      {/* Full-bleed cover */}
+      <div className="relative h-[200px] w-full overflow-hidden" style={coverStyle}>
+        <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.35)" }} />
+      </div>
+
+      {/* Content */}
+      <div className="relative max-w-[460px] mx-auto px-4">
+        {/* Avatar — overlaps cover */}
+        <div className="flex justify-center -mt-12">
+          <div
+            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center"
             style={{
-              backgroundColor: profile.bg_image_url ? "rgba(255,255,255,0.9)" : "var(--color-surface)",
-              color: "var(--color-text)",
-              border: "1px solid rgba(0,0,0,0.08)",
+              border: "4px solid white",
+              backgroundColor: "var(--color-surface)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
             }}
-          >
-            {lang === "EN" ? "EN · TL" : "TL · EN"}
-          </button>
-        </div>
-
-        {/* Mood banner */}
-        {moodText && (
-          <div
-            className="rounded-full px-4 py-2.5 mb-5 text-center"
-            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text)" }}
-          >
-            <p className="text-[13px] font-semibold">{moodText}</p>
-            <p className="text-[10px] opacity-70">{timeAgo(profile.mood_updated_at, lang)}</p>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div
-            className="w-[88px] h-[88px] rounded-full mx-auto overflow-hidden flex items-center justify-center"
-            style={{ boxShadow: `0 0 0 3px var(--color-accent)`, backgroundColor: "var(--color-surface)" }}
           >
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.display_name ?? ""} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-[28px]" style={{ color: "var(--color-text-muted)" }}>
+              <span className="text-[32px]" style={{ color: "var(--color-text-muted)" }}>
                 {(profile.display_name ?? profile.username ?? "?").charAt(0).toUpperCase()}
               </span>
             )}
           </div>
+        </div>
+
+        {/* Mood badge — above name */}
+        {moodText && (
+          <div className="flex justify-center mt-3">
+            <span
+              className="px-4 py-1.5 rounded-full text-[12px] font-semibold"
+              style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text)" }}
+            >
+              {moodText}
+              <span className="ml-1.5 opacity-60 text-[10px]">{timeAgo(profile.mood_updated_at, lang)}</span>
+            </span>
+          </div>
+        )}
+
+        {/* Name / username / bio */}
+        <div className="text-center mt-2">
           <h1
-            className="mt-3 text-[20px] font-extrabold"
-            style={{ color: profile.bg_image_url ? "#fff" : "var(--color-text)" }}
+            className="text-[22px] font-bold"
+            style={{ color: hasBg ? "#fff" : "var(--color-text)" }}
           >
             {profile.display_name ?? profile.username}
           </h1>
-          <p className="text-[12px]" style={{ color: profile.bg_image_url ? "rgba(255,255,255,0.75)" : "var(--color-text-muted)" }}>
+          <p className="text-[13px]" style={{ color: hasBg ? "rgba(255,255,255,0.72)" : "var(--color-text-muted)" }}>
             @{profile.username}
           </p>
           {bioText && (
             <p
-              className="mt-2 text-[13px] leading-snug max-w-[320px] mx-auto"
-              style={{ color: profile.bg_image_url ? "rgba(255,255,255,0.9)" : "var(--color-text)" }}
+              className="mt-2 text-[14px] leading-snug max-w-[280px] mx-auto"
+              style={{ color: hasBg ? "rgba(255,255,255,0.9)" : "var(--color-text)" }}
             >
               {bioText}
             </p>
           )}
         </div>
 
+        {/* Lang toggle — below avatar */}
+        <div className="flex justify-center mt-3 mb-6">
+          <button
+            onClick={toggle}
+            className="px-3 py-1 rounded-full text-[11px] font-semibold"
+            style={{
+              backgroundColor: hasBg ? "rgba(255,255,255,0.9)" : "var(--color-surface)",
+              color: "var(--color-text)",
+              border: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            {lang === "EN" ? "EN | TL" : "TL | EN"}
+          </button>
+        </div>
+
         {/* Links */}
-        <div className="space-y-3">
-          {heroLink && <LinkCard link={heroLink} hero onTap={onLinkTap} lang={lang} />}
+        <div className="flex flex-col gap-[10px]">
+          {heroLink && <LinkCard link={heroLink} hero onTap={onLinkTap} lang={lang} t={t} />}
           {restLinks.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-[10px]">
               {restLinks.map((l) =>
-                l.is_video ? (
-                  // videos always full-width
+                l.is_video || l.category === "pay" ? (
                   <div key={l.id} className="col-span-2">
-                    <LinkCard link={l} hero={false} onTap={onLinkTap} lang={lang} forceFull />
+                    <LinkCard link={l} hero={false} onTap={onLinkTap} lang={lang} t={t} forceFull />
                   </div>
                 ) : (
-                  <LinkCard key={l.id} link={l} hero={false} onTap={onLinkTap} lang={lang} />
+                  <LinkCard key={l.id} link={l} hero={false} onTap={onLinkTap} lang={lang} t={t} />
                 )
               )}
             </div>
           )}
         </div>
 
-        {/* GCash */}
-        {profile.gcash_enabled && profile.gcash_number && (
-          <button
-            onClick={() => setTipOpen(true)}
-            className="mt-4 w-full p-4 rounded-2xl flex items-center gap-3 text-white"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            <Wallet size={22} />
-            <div className="flex-1 text-left">
-              <p className="text-[13px] opacity-80">GCash</p>
-              <p className="text-[16px] font-extrabold">{t({ en: "Send a tip", tl: "Magpadala ng tip" })}</p>
-            </div>
-            <ArrowUpRight size={20} />
-          </button>
-        )}
-
-        {/* Pasaload */}
-        {profile.pasaload_enabled && profile.pasaload_number && (
-          <button
-            onClick={() => setPasaOpen(true)}
-            className="mt-3 w-full p-4 rounded-2xl flex items-center gap-3"
-            style={{
-              backgroundColor: "var(--color-surface)",
-              border: "1px solid rgba(0,0,0,0.06)",
-              color: "var(--color-text)",
-            }}
-          >
-            <Smartphone size={22} style={{ color: "var(--color-secondary)" }} />
-            <div className="flex-1 text-left">
-              <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>
-                {profile.pasaload_network ?? "Pasaload"}
-              </p>
-              <p className="text-[16px] font-extrabold">{t({ en: "Send me load", tl: "Padalhan mo ako ng load" })}</p>
-            </div>
-            <ArrowUpRight size={20} />
-          </button>
-        )}
-
         {/* Schedule */}
         {profile.schedule_enabled && (
-          <ScheduleCard
-            schedule={schedule}
-            expanded={scheduleExpanded}
-            onToggle={() => setScheduleExpanded((v) => !v)}
-            lang={lang}
-            t={t}
-          />
+          <div className="mt-[10px]">
+            <ScheduleCard
+              schedule={schedule}
+              expanded={scheduleExpanded}
+              onToggle={() => setScheduleExpanded((v) => !v)}
+              lang={lang}
+              t={t}
+            />
+          </div>
         )}
 
         {/* Collab */}
         {profile.collab_enabled && profile.collab_json && (
-          <CollabCard collab={profile.collab_json} t={t} />
+          <div className="mt-[10px]">
+            <CollabCard collab={profile.collab_json} t={t} />
+          </div>
         )}
 
         <p
           className="mt-10 text-center text-[11px]"
-          style={{ color: profile.bg_image_url ? "rgba(255,255,255,0.7)" : "var(--color-text-muted)" }}
+          style={{ color: hasBg ? "rgba(255,255,255,0.6)" : "var(--color-text-muted)" }}
         >
           Made with ♥ in the Philippines · Pinoy.Digital
         </p>
       </div>
 
-      {tipOpen && (
-        <TipJarSheet
-          number={profile.gcash_number}
-          presets={presets}
-          onClose={() => setTipOpen(false)}
-          t={t}
-        />
-      )}
-      {pasaOpen && (
-        <PasaloadSheet
-          number={profile.pasaload_number}
-          network={profile.pasaload_network ?? ""}
-          onClose={() => setPasaOpen(false)}
-          t={t}
-        />
-      )}
+      {/* Bottom share strip */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between px-5"
+        style={{
+          height: 56,
+          backgroundColor: "white",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+        }}
+      >
+        <span className="text-[13px] font-extrabold" style={{ color: "var(--color-primary)" }}>
+          Pinoy.Digital
+        </span>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-[13px] font-semibold"
+          style={{ backgroundColor: "var(--color-primary)" }}
+        >
+          <Share2 size={14} />
+          {t({ en: "Share", tl: "I-share" })}
+        </button>
+      </div>
     </div>
   );
 };
 
 const LinkCard = ({
-  link, hero, onTap, lang, forceFull = false,
+  link, hero, onTap, lang, t, forceFull = false,
 }: {
-  link: any; hero: boolean; onTap: (l: any) => void; lang: "EN" | "TL"; forceFull?: boolean;
+  link: any; hero: boolean; onTap: (l: any) => void; lang: "EN" | "TL"; t: any; forceFull?: boolean;
 }) => {
   const Icon = link.icon_name ? platformIcon(link.icon_name) : categoryIcon(link.category);
   const title = (lang === "EN" ? link.title_en : link.title_tl) || link.title_en || link.title_tl || "Open";
@@ -304,7 +308,7 @@ const LinkCard = ({
   if (link.is_video) {
     return (
       <div
-        className="rounded-2xl overflow-hidden"
+        className="rounded-2xl overflow-hidden w-full"
         style={{ backgroundColor: "var(--color-surface)", border: "1px solid rgba(0,0,0,0.06)" }}
       >
         <VideoPlayer link={link} />
@@ -326,59 +330,75 @@ const LinkCard = ({
   if (isQR) {
     return (
       <div
-        className={`rounded-2xl overflow-hidden ${hero || forceFull ? "w-full" : ""}`}
+        className="rounded-2xl overflow-hidden w-full"
         style={{
           backgroundColor: "var(--color-surface)",
           border: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "var(--color-bg)", color: "var(--color-primary)" }}
-            >
-              <Icon size={16} />
-            </div>
-            <p className="text-[13px] font-semibold flex-1 truncate" style={{ color: "var(--color-text)" }}>
-              {title}
-            </p>
-            <QrCode size={16} style={{ color: "var(--color-text-muted)" }} />
-          </div>
+        <div className="p-4 flex flex-col items-center">
+          <p className="text-[14px] font-bold mb-3" style={{ color: "var(--color-text)" }}>
+            {title}
+          </p>
           <img
             src={link.url}
             alt={`${title} QR code`}
-            className="w-full max-w-[200px] mx-auto block rounded-xl object-contain"
+            className="rounded-xl object-contain"
+            style={{ width: 180, height: 180 }}
           />
+          <p className="mt-2 text-[12px]" style={{ color: "var(--color-text-muted)" }}>
+            {t({ en: "Scan to pay", tl: "I-scan para bayaran" })}
+          </p>
         </div>
       </div>
     );
   }
 
+  // Hero card
+  if (hero || forceFull) {
+    return (
+      <button
+        onClick={() => onTap(link)}
+        className="relative w-full rounded-2xl p-4 flex items-center gap-3 text-left transition-transform active:scale-[0.98] text-white"
+        style={{
+          backgroundColor: "var(--color-primary)",
+          minHeight: 100,
+        }}
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+        >
+          <Icon size={20} />
+        </div>
+        <p className="flex-1 font-bold text-[16px] text-center">{title}</p>
+        <ArrowUpRight size={20} className="shrink-0" />
+      </button>
+    );
+  }
+
+  // Grid card
   return (
     <button
       onClick={() => onTap(link)}
-      className={`text-left rounded-2xl p-4 flex items-center gap-3 transition-transform active:scale-[0.98] ${
-        hero || forceFull ? "w-full" : ""
-      }`}
+      className="relative w-full rounded-2xl p-3 flex flex-col justify-between text-left transition-transform active:scale-[0.98]"
       style={{
-        backgroundColor: hero ? "var(--color-secondary)" : "var(--color-surface)",
-        color: hero ? "#fff" : "var(--color-text)",
-        border: hero ? "none" : "1px solid rgba(0,0,0,0.06)",
-        minHeight: hero ? 96 : 88,
+        height: 90,
+        backgroundColor: "var(--color-surface)",
+        border: "1px solid rgba(0,0,0,0.06)",
+        color: "var(--color-text)",
       }}
     >
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{
-          backgroundColor: hero ? "rgba(255,255,255,0.18)" : "var(--color-bg)",
-          color: hero ? "#fff" : "var(--color-primary)",
-        }}
-      >
-        <Icon size={20} />
+      <div className="flex items-start justify-between">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: "var(--color-bg)", color: "var(--color-primary)" }}
+        >
+          <Icon size={14} />
+        </div>
+        <ArrowUpRight size={12} style={{ color: "var(--color-text-muted)" }} />
       </div>
-      <p className={`flex-1 font-bold ${hero ? "text-[16px]" : "text-[13px]"}`}>{title}</p>
-      <ArrowUpRight size={hero ? 22 : 16} className="shrink-0" />
+      <p className="text-[13px] font-bold truncate" style={{ color: "var(--color-text)" }}>{title}</p>
     </button>
   );
 };
@@ -416,74 +436,7 @@ const VideoPlayer = ({ link }: { link: any }) => {
   );
 };
 
-// --- Sheets & cards ---
-
-const TipJarSheet = ({
-  number, presets, onClose, t,
-}: { number: string; presets: number[]; onClose: () => void; t: any }) => {
-  const copy = async () => {
-    await navigator.clipboard.writeText(number);
-    toast.success(t({ en: "Copied!", tl: "Nakopya!" }));
-  };
-  return (
-    <SheetWrap onClose={onClose} title={t({ en: "Send a tip via GCash", tl: "Mag-tip sa GCash" })}>
-      <div className="flex items-center gap-2 mb-4">
-        <p className="flex-1 text-[22px] font-extrabold tracking-wide" style={{ color: "var(--color-text)" }}>
-          {number}
-        </p>
-        <button onClick={copy} className="p-3 rounded-full text-white" style={{ backgroundColor: "var(--color-primary)" }}>
-          <Copy size={16} />
-        </button>
-      </div>
-      <div className="flex gap-2 mb-4">
-        {presets.map((p) => (
-          <div
-            key={p}
-            className="flex-1 py-2 rounded-full text-center text-[14px] font-semibold"
-            style={{ backgroundColor: "var(--color-bg)", color: "var(--color-text)" }}
-          >
-            ₱{p}
-          </div>
-        ))}
-      </div>
-      <p className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-        {t({ en: "Open GCash app → Send Money → paste number", tl: "Buksan ang GCash → Send Money → i-paste ang number" })}
-      </p>
-    </SheetWrap>
-  );
-};
-
-const PasaloadSheet = ({
-  number, network, onClose, t,
-}: { number: string; network: string; onClose: () => void; t: any }) => {
-  const copy = async () => {
-    await navigator.clipboard.writeText(number);
-    toast.success(t({ en: "Copied!", tl: "Nakopya!" }));
-  };
-  return (
-    <SheetWrap onClose={onClose} title={t({ en: "Send me load", tl: "Padalhan ng load" })}>
-      <div className="flex items-center gap-2 mb-3">
-        <p className="flex-1 text-[22px] font-extrabold" style={{ color: "var(--color-text)" }}>
-          {number}
-        </p>
-        <button onClick={copy} className="p-3 rounded-full text-white" style={{ backgroundColor: "var(--color-primary)" }}>
-          <Copy size={16} />
-        </button>
-      </div>
-      {network && (
-        <span
-          className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold mb-4"
-          style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text)" }}
-        >
-          {network}
-        </span>
-      )}
-      <p className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-        {t({ en: "Open GCash or your carrier app → Pasaload → paste number", tl: "Buksan ang GCash o carrier app → Pasaload → i-paste" })}
-      </p>
-    </SheetWrap>
-  );
-};
+// --- Cards ---
 
 const ScheduleCard = ({
   schedule, expanded, onToggle, lang, t,
@@ -528,7 +481,7 @@ const ScheduleCard = ({
   return (
     <button
       onClick={onToggle}
-      className="mt-3 w-full p-4 rounded-2xl flex flex-col gap-2 text-left"
+      className="w-full p-4 rounded-2xl flex flex-col gap-2 text-left"
       style={{
         backgroundColor: "var(--color-surface)",
         border: "1px solid rgba(0,0,0,0.06)",
@@ -567,7 +520,7 @@ const CollabCard = ({ collab, t }: { collab: any; t: any }) => {
   const href = isEmail ? `mailto:${contact}` : `https://instagram.com/${contact.replace(/^@/, "")}`;
   return (
     <div
-      className="mt-3 p-4 rounded-2xl"
+      className="p-4 rounded-2xl"
       style={{ backgroundColor: "var(--color-surface)", border: "1px solid rgba(0,0,0,0.06)" }}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -609,31 +562,5 @@ const CollabCard = ({ collab, t }: { collab: any; t: any }) => {
     </div>
   );
 };
-
-const SheetWrap = ({
-  title, onClose, children,
-}: { title: string; onClose: () => void; children: React.ReactNode }) => (
-  <div
-    className="fixed inset-0 z-50 flex items-end justify-center"
-    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-    onClick={onClose}
-  >
-    <div
-      className="w-full max-w-[460px] rounded-t-3xl p-5"
-      style={{ backgroundColor: "var(--color-surface)" }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[16px] font-extrabold" style={{ color: "var(--color-text)" }}>
-          {title}
-        </h3>
-        <button onClick={onClose} className="p-1" style={{ color: "var(--color-text-muted)" }}>
-          <X size={20} />
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
 
 export default PublicProfile;

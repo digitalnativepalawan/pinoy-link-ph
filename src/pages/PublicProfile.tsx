@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link as RLink } from "react-router-dom";
 import {
-  ArrowUpRight, Wallet, Smartphone, Clock, Handshake, Copy, X, Mail, Instagram,
+  ArrowUpRight, Wallet, Smartphone, Clock, Handshake, Copy, X, Mail, Instagram, QrCode,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -299,6 +299,7 @@ const LinkCard = ({
 }) => {
   const Icon = link.icon_name ? platformIcon(link.icon_name) : categoryIcon(link.category);
   const title = (lang === "EN" ? link.title_en : link.title_tl) || link.title_en || link.title_tl || "Open";
+  const isQR = link.category === "pay" && link.url && link.url.includes("/storage/v1/object/public/qr-codes/");
 
   if (link.is_video) {
     return (
@@ -317,6 +318,38 @@ const LinkCard = ({
           <p className="text-[13px] font-semibold flex-1 truncate" style={{ color: "var(--color-text)" }}>
             {title}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isQR) {
+    return (
+      <div
+        className={`rounded-2xl overflow-hidden ${hero || forceFull ? "w-full" : ""}`}
+        style={{
+          backgroundColor: "var(--color-surface)",
+          border: "1px solid rgba(0,0,0,0.06)",
+        }}
+      >
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: "var(--color-bg)", color: "var(--color-primary)" }}
+            >
+              <Icon size={16} />
+            </div>
+            <p className="text-[13px] font-semibold flex-1 truncate" style={{ color: "var(--color-text)" }}>
+              {title}
+            </p>
+            <QrCode size={16} style={{ color: "var(--color-text-muted)" }} />
+          </div>
+          <img
+            src={link.url}
+            alt={`${title} QR code`}
+            className="w-full max-w-[200px] mx-auto block rounded-xl object-contain"
+          />
         </div>
       </div>
     );

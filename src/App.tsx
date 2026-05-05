@@ -41,6 +41,7 @@ const App = () => (
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/:username" element={<PublicProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

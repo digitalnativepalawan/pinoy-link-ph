@@ -124,11 +124,13 @@ export type Database = {
           display_name: string | null
           gcash_enabled: boolean
           gcash_number: string | null
+          gcash_presets: Json | null
           id: string
           mood_en: string | null
           mood_tl: string | null
           mood_updated_at: string | null
           pasaload_enabled: boolean
+          pasaload_network: string | null
           pasaload_number: string | null
           schedule_enabled: boolean
           schedule_json: Json | null
@@ -146,11 +148,13 @@ export type Database = {
           display_name?: string | null
           gcash_enabled?: boolean
           gcash_number?: string | null
+          gcash_presets?: Json | null
           id: string
           mood_en?: string | null
           mood_tl?: string | null
           mood_updated_at?: string | null
           pasaload_enabled?: boolean
+          pasaload_network?: string | null
           pasaload_number?: string | null
           schedule_enabled?: boolean
           schedule_json?: Json | null
@@ -168,11 +172,13 @@ export type Database = {
           display_name?: string | null
           gcash_enabled?: boolean
           gcash_number?: string | null
+          gcash_presets?: Json | null
           id?: string
           mood_en?: string | null
           mood_tl?: string | null
           mood_updated_at?: string | null
           pasaload_enabled?: boolean
+          pasaload_network?: string | null
           pasaload_number?: string | null
           schedule_enabled?: boolean
           schedule_json?: Json | null

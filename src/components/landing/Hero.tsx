@@ -1,25 +1,32 @@
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Hero = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [slug, setSlug] = useState("");
+  const [checking, setChecking] = useState(false);
 
-  const handleClaim = (e: React.FormEvent) => {
+  const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleaned = slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
-    if (!cleaned) {
-      toast.error(t({ en: "Please enter a username", tl: "Maglagay ng username" }));
+    const cleaned = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (cleaned.length < 3) {
+      toast.error(t({ en: "Please enter a valid username (3+ chars)", tl: "Maglagay ng tamang username (3+ titik)" }));
       return;
     }
-    toast.success(
-      t({
-        en: `Reserved pinoy.digital/${cleaned} — sign up coming soon`,
-        tl: `Na-reserve pinoy.digital/${cleaned} — malapit nang mag-sign up`,
-      })
-    );
+    setChecking(true);
+    const { data } = await supabase.from("profiles").select("id").eq("username", cleaned).maybeSingle();
+    setChecking(false);
+    if (data) {
+      toast.error(t({ en: "Username taken, try another", tl: "Nakuha na ang username, subukan ang iba" }));
+      return;
+    }
+    localStorage.setItem("pending_username", cleaned);
+    navigate("/auth");
   };
 
   return (
@@ -66,23 +73,24 @@ export const Hero = () => {
         </div>
         <button
           type="submit"
-          className="flex items-center gap-1 rounded-full px-4 py-2.5 text-[13px] font-semibold text-white shrink-0"
+          disabled={checking}
+          className="flex items-center gap-1 rounded-full px-4 py-2.5 text-[13px] font-semibold text-white shrink-0 disabled:opacity-60"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          {t({ en: "Claim", tl: "Kunin" })}
+          {checking ? "…" : t({ en: "Claim", tl: "Kunin" })}
           <ArrowRight size={14} strokeWidth={2.5} />
         </button>
       </form>
 
       <p className="mt-3 text-center text-[13px]" style={{ color: "var(--color-text-muted)" }}>
         {t({ en: "Already have an account?", tl: "May account ka na?" })}{" "}
-        <a
-          href="#login"
+        <Link
+          to="/auth"
           className="font-medium underline"
           style={{ color: "var(--color-primary)" }}
         >
           {t({ en: "Log in", tl: "Mag-log in" })}
-        </a>
+        </Link>
       </p>
     </section>
   );

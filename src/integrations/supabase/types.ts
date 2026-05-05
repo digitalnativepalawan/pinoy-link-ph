@@ -115,6 +115,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bg_image_url: string | null
           bio_en: string | null
           bio_tl: string | null
           collab_enabled: boolean
@@ -136,6 +137,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bg_image_url?: string | null
           bio_en?: string | null
           bio_tl?: string | null
           collab_enabled?: boolean
@@ -157,6 +159,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bg_image_url?: string | null
           bio_en?: string | null
           bio_tl?: string | null
           collab_enabled?: boolean

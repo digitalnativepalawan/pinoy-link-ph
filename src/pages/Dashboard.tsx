@@ -32,7 +32,7 @@ const Dashboard = () => {
       if (data) {
         setDisplayName(data.display_name ?? "");
         setUsername(data.username);
-        if (data.theme) applyTheme(data.theme as Theme);
+        if (data.theme) applyTheme(data.theme as unknown as Theme);
       }
     })();
   }, []);

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, QrCode } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { compressImage } from "@/lib/imageCompress";
 import {
   CATEGORIES, PLATFORMS, type Category, type PlatformShortcut, detectVideoType,
 } from "@/lib/categories";
@@ -49,7 +50,11 @@ export const LinkSheet = ({
     (link?.video_type as any) ?? null
   );
   const [saving, setSaving] = useState(false);
+  const [qrFile, setQrFile] = useState<File | null>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(link?.url ?? null);
+  const [qrUploading, setQrUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // lock body scroll
@@ -62,6 +67,7 @@ export const LinkSheet = ({
 
   const platforms: PlatformShortcut[] = PLATFORMS[category] ?? [];
   const isVideoUpload = category === "video" && videoType === "upload";
+  const isPayCategory = category === "pay";
 
   const save = async () => {
     if (category === "video") {
@@ -71,6 +77,11 @@ export const LinkSheet = ({
       }
       if ((videoType === "tiktok" || videoType === "youtube") && !url.trim()) {
         toast.error(t({ en: "Enter the video URL", tl: "Ilagay ang URL ng video" }));
+        return;
+      }
+    } else if (isPayCategory) {
+      if (!qrFile && !qrPreview) {
+        toast.error(t({ en: "Upload a QR code image", tl: "Mag-upload ng QR code" }));
         return;
       }
     } else if (!url.trim()) {
@@ -108,6 +119,27 @@ export const LinkSheet = ({
           const detected = detectVideoType(videoUrl);
           if (detected) resolvedVideoType = detected;
         }
+      }
+
+      if (isPayCategory && qrFile) {
+        setQrUploading(true);
+        try {
+          const blob = await compressImage(qrFile, 800, 0.9);
+          const path = `${userId}/${platformId ?? "pay"}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.jpg`;
+          const { error } = await supabase.storage
+            .from("qr-codes")
+            .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+          if (error) throw error;
+          const { data } = supabase.storage.from("qr-codes").getPublicUrl(path);
+          setUrl(data.publicUrl);
+          url = data.publicUrl;
+        } catch (err: any) {
+          toast.error("QR upload failed: " + err.message);
+          setSaving(false);
+          setQrUploading(false);
+          return;
+        }
+        setQrUploading(false);
       }
 
       const payload = {
@@ -238,7 +270,7 @@ export const LinkSheet = ({
             />
           </Field>
 
-          {!isVideoUpload && (
+          {!isVideoUpload && !isPayCategory && (
             <Field label="URL">
               <input
                 type="url"
@@ -248,6 +280,56 @@ export const LinkSheet = ({
                 className={inputCls}
                 style={inputStyle}
               />
+            </Field>
+          )}
+
+          {isPayCategory && (
+            <Field label={t({ en: "QR Code image", tl: "Larawan ng QR Code" })}>
+              <input
+                ref={qrInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setQrFile(file);
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => setQrPreview(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => qrInputRef.current?.click()}
+                className="w-full rounded-xl flex flex-col items-center justify-center gap-2 py-4 transition-opacity active:opacity-70"
+                style={{
+                  backgroundColor: "var(--color-bg)",
+                  border: "1px dashed rgba(0,0,0,0.2)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {qrPreview ? (
+                  <img
+                    src={qrPreview}
+                    alt="QR code"
+                    className="w-40 h-40 object-contain rounded-lg"
+                  />
+                ) : (
+                  <>
+                    <QrCode size={36} />
+                    <span className="text-[12px]">
+                      {t({ en: "Tap to upload QR code", tl: "Pindutin para mag-upload ng QR code" })}
+                    </span>
+                  </>
+                )}
+              </button>
+              {qrPreview && (
+                <p className="text-[11px] mt-1 text-center" style={{ color: "var(--color-text-muted)" }}>
+                  {t({ en: "Tap image to replace", tl: "Pindutin ang larawan para palitan" })}
+                </p>
+              )}
             </Field>
           )}
 
@@ -289,11 +371,11 @@ export const LinkSheet = ({
 
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || qrUploading}
             className="w-full py-3 rounded-full text-[14px] font-semibold text-white disabled:opacity-50"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            {saving ? "…" : t({ en: "Save", tl: "I-save" })}
+            {saving || qrUploading ? "…" : t({ en: "Save", tl: "I-save" })}
           </button>
         </div>
       </div>

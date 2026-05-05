@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clicks: {
+        Row: {
+          clicked_at: string
+          country: string | null
+          id: string
+          link_id: string
+          profile_id: string
+          source: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          link_id: string
+          profile_id: string
+          source?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          link_id?: string
+          profile_id?: string
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clicks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      links: {
+        Row: {
+          category: string | null
+          created_at: string
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          is_video: boolean
+          profile_id: string
+          sort_order: number
+          title_en: string | null
+          title_tl: string | null
+          url: string | null
+          video_type: string | null
+          video_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_video?: boolean
+          profile_id: string
+          sort_order?: number
+          title_en?: string | null
+          title_tl?: string | null
+          url?: string | null
+          video_type?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_video?: boolean
+          profile_id?: string
+          sort_order?: number
+          title_en?: string | null
+          title_tl?: string | null
+          url?: string | null
+          video_type?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio_en: string | null
+          bio_tl: string | null
+          collab_enabled: boolean
+          collab_json: Json | null
+          created_at: string
+          display_name: string | null
+          gcash_enabled: boolean
+          gcash_number: string | null
+          id: string
+          mood_en: string | null
+          mood_tl: string | null
+          mood_updated_at: string | null
+          pasaload_enabled: boolean
+          pasaload_number: string | null
+          schedule_enabled: boolean
+          schedule_json: Json | null
+          theme: Json | null
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio_en?: string | null
+          bio_tl?: string | null
+          collab_enabled?: boolean
+          collab_json?: Json | null
+          created_at?: string
+          display_name?: string | null
+          gcash_enabled?: boolean
+          gcash_number?: string | null
+          id: string
+          mood_en?: string | null
+          mood_tl?: string | null
+          mood_updated_at?: string | null
+          pasaload_enabled?: boolean
+          pasaload_number?: string | null
+          schedule_enabled?: boolean
+          schedule_json?: Json | null
+          theme?: Json | null
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio_en?: string | null
+          bio_tl?: string | null
+          collab_enabled?: boolean
+          collab_json?: Json | null
+          created_at?: string
+          display_name?: string | null
+          gcash_enabled?: boolean
+          gcash_number?: string | null
+          id?: string
+          mood_en?: string | null
+          mood_tl?: string | null
+          mood_updated_at?: string | null
+          pasaload_enabled?: boolean
+          pasaload_number?: string | null
+          schedule_enabled?: boolean
+          schedule_json?: Json | null
+          theme?: Json | null
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

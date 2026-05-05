@@ -170,7 +170,7 @@ export const LinkSheet = ({
         </div>
 
         {/* Category pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-3 no-scrollbar">
+        <div className="flex flex-wrap gap-2 pb-2 mb-3">
           {CATEGORIES.map((c) => {
             const Icon = c.icon;
             const sel = category === c.id;

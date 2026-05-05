@@ -8,9 +8,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { applyTheme, type Theme, THEMES } from "@/lib/themes";
 import { categoryIcon, platformIcon, youtubeEmbed, tiktokEmbed } from "@/lib/categories";
 import {
-  DAYS, DEFAULT_SCHEDULE, formatTime12, todayKey, type DayKey, type ScheduleJson,
+  DAYS, DEFAULT_SCHEDULE, formatTime12, todayKey, timeAgo, type DayKey, type ScheduleJson,
 } from "@/lib/schedule";
-import { timeAgo } from "@/lib/timeAgo";
 import { toast } from "sonner";
 
 export const PublicProfile = ({ usernameProp, isPreview = false }: { usernameProp?: string; isPreview?: boolean }) => {
